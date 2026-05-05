@@ -38,7 +38,7 @@ function fallbackPredict(input) {
   if (ratio > 5) score += 0.20;
   else if (ratio > 3) score += 0.10;
 
-  score += (Math.random() - 0.5) * 0.05;
+  // Deterministic — identical inputs always produce the same result
   const probability = Math.max(0.02, Math.min(0.97, 0.15 + score));
   return { prediction: probability > 0.5 ? 1 : 0, probability };
 }

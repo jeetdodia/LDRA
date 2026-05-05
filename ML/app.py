@@ -40,6 +40,8 @@ def predict():
   # Optional input (your backend currently sends this; training includes it)
   employment_status = payload.get("employment_status", "employed")
 
+  VALID_EMPLOYMENT = {"employed", "self_employed", "unemployed", "retired"}
+
   try:
     row = {
       "credit_score": float(payload["credit_score"]),
@@ -51,6 +53,23 @@ def predict():
     }
   except (TypeError, ValueError):
     return jsonify({ "error": "Invalid numeric input types" }), 400
+
+  # Range validation
+  errors = []
+  if not (300 <= row["credit_score"] <= 850):
+    errors.append("credit_score must be between 300 and 850")
+  if row["income"] < 0:
+    errors.append("income must be non-negative")
+  if not (18 <= row["age"] <= 120):
+    errors.append("age must be between 18 and 120")
+  if row["loan_amount"] <= 0:
+    errors.append("loan_amount must be greater than 0")
+  if row["loan_term"] <= 0:
+    errors.append("loan_term must be greater than 0")
+  if row["employment_status"] not in VALID_EMPLOYMENT:
+    errors.append(f"employment_status must be one of: {', '.join(sorted(VALID_EMPLOYMENT))}")
+  if errors:
+    return jsonify({ "error": "Validation failed", "details": errors }), 400
 
   X = pd.DataFrame([row])
 

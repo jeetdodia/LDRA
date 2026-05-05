@@ -17,6 +17,17 @@ export function requireAuth(req, res, next) {
   }
 }
 
+/**
+ * Middleware to restrict access to admin users only.
+ * Must be used AFTER requireAuth so that req.user is populated.
+ */
+export function requireAdmin(req, res, next) {
+  if (!req.user || req.user.role !== "admin") {
+    return res.status(403).json({ error: "Admin access required" });
+  }
+  next();
+}
+
 export function signToken(payload) {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
 }

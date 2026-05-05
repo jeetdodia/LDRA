@@ -1,0 +1,26 @@
+{
+  "version": 2,
+  "name": "ldra-fullstack",
+  "builds": [
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "dist" }
+    },
+    {
+      "src": "backend/src/app.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "ML/app.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    { "src": "/api/predict", "dest": "ML/app.py" },
+    { "src": "/api/ml-health", "dest": "ML/app.py" },
+    { "src": "/api/(.*)", "dest": "backend/src/app.js" },
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/" }
+  ]
+}

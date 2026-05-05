@@ -7,11 +7,33 @@ import LoansList from "./pages/LoansList";
 import LoanDetails from "./pages/LoanDetails";
 import Layout   from "./components/Layout";
 
+/**
+ * Check if a JWT is expired by decoding the payload.
+ */
+function isTokenValid(token) {
+  if (!token) return false;
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    return payload.exp * 1000 > Date.now();
+  } catch {
+    return false;
+  }
+}
+
 function ProtectedRoute({ component: Component, ...props }) {
   const [, setLocation] = useLocation();
   const token = localStorage.getItem("lendingToken");
-  useEffect(() => { if (!token) setLocation("/login"); }, [token]);
-  if (!token) {
+  const valid = isTokenValid(token);
+
+  useEffect(() => {
+    if (!valid) {
+      localStorage.removeItem("lendingToken");
+      localStorage.removeItem("lendingUserName");
+      setLocation("/login");
+    }
+  }, [valid]);
+
+  if (!valid) {
     return (
       <div className="empty-state">
         <h3>Redirecting to login…</h3>

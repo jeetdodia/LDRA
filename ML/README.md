@@ -1,29 +1,35 @@
 # Machine Learning Service (Flask + Random Forest)
 
 This folder contains:
-- `train.py`: trains a **RandomForestClassifier** model and saves it as `loan_model.pkl`
-- `app.py`: Flask prediction API exposing `POST /predict`
+- `train.py`: trains a **RandomForestClassifier** using real loan data from MongoDB Atlas and saves it as `loan_model.pkl`
+- `app.py`: Flask prediction API exposing `POST /predict` and `GET /health`
 
-## Model file
+## Training the Model
 
-The Flask app expects `loan_model.pkl` to exist in this folder. If it doesn't:
+The training script connects to MongoDB Atlas (using the `MONGO_URI` from `backend/.env`) and retrieves historically approved/rejected loan applications. It requires at least **10 records with mixed outcomes** (both approved and rejected) to produce a valid model.
 
 ```bash
+pip install -r requirements.txt
 python train.py
 ```
+
+This generates `loan_model.pkl` in this folder.
 
 ## Run the ML API
 
 ```bash
-pip install -r requirements.txt
 python app.py
 ```
 
-Default port is `5001`.
+Default port is `5001`. Override with the `PORT` environment variable.
 
 ## Prediction API
 
-Endpoint: `POST /predict`
+### `GET /health`
+
+Returns `{ "status": "ok" }`.
+
+### `POST /predict`
 
 Request body (minimum required):
 ```json
@@ -46,9 +52,18 @@ Response:
 { "prediction": 0, "probability": 0.12 }
 ```
 
-## Dataset note
+### Input Validation
 
-Because you don't have a real dataset yet, `train.py` trains on a **synthetic demo dataset** that preserves realistic relationships between features and default risk.
+| Field | Type | Range |
+|-------|------|-------|
+| `credit_score` | float | 300–850 |
+| `income` | float | ≥ 0 |
+| `age` | float | 18–120 |
+| `loan_amount` | float | > 0 |
+| `loan_term` | float | > 0 |
+| `employment_status` | string | employed, self_employed, unemployed, retired |
 
-When you have a real loan default dataset, update `make_synthetic_loan_dataset()` to load and preprocess your dataset, then re-run `python train.py`.
+## Notes
 
+- If `loan_model.pkl` does not exist, the Flask app will fail to start. Run `python train.py` first.
+- For production, run behind a WSGI server (gunicorn/uwsgi) and enable HTTPS.

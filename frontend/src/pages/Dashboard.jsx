@@ -4,15 +4,24 @@ import {
   PieChart, Pie, Cell, LineChart, Line, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from "recharts";
-import { FileText, DollarSign, Activity, CheckCircle2, TrendingUp } from "lucide-react";
+import { FileText, DollarSign, Activity, CheckCircle2, Loader } from "lucide-react";
 
 const PIE_COLORS = ["#dc2626", "#d97706", "#16a34a"];
 const BAR_COLORS = ["#3b82f6", "#6366f1", "#8b5cf6", "#a855f7", "#2563eb"];
 const fmt = v => new Intl.NumberFormat("en-IN", { style:"currency", currency:"INR", notation:"compact", maximumFractionDigits:1 }).format(v);
 
 export default function Dashboard() {
-  const { data: summary } = useQuery({ queryKey:["summary"], queryFn:()=>api.get("/analytics/summary") });
-  const { data: charts  } = useQuery({ queryKey:["charts"],  queryFn:()=>api.get("/analytics/charts") });
+  const { data: summary, isLoading: summaryLoading, error: summaryError } = useQuery({
+    queryKey:["summary"],
+    queryFn:()=>api.get("/analytics/summary"),
+  });
+  const { data: charts, isLoading: chartsLoading, error: chartsError } = useQuery({
+    queryKey:["charts"],
+    queryFn:()=>api.get("/analytics/charts"),
+  });
+
+  const isLoading = summaryLoading || chartsLoading;
+  const error = summaryError || chartsError;
 
   const stats = [
     { label:"Total Applications", value: summary?.totalLoans ?? "—",                                   icon: FileText,     accent: "#3b82f6" },
@@ -20,6 +29,28 @@ export default function Dashboard() {
     { label:"Approval Rate",      value: summary ? `${summary.approvalRate.toFixed(1)}%` : "0%",       icon: CheckCircle2, accent: "#8b5cf6" },
     { label:"Avg Credit Score",   value: summary?.avgCreditScore ? Math.round(summary.avgCreditScore) : "—", icon: Activity, accent: "#d97706" },
   ];
+
+  if (isLoading) {
+    return (
+      <div className="page">
+        <div className="empty-state">
+          <div className="spinner" style={{ margin: "0 auto 16px", borderColor: "rgba(59,130,246,0.2)", borderTopColor: "#3b82f6" }} />
+          <h3>Loading Dashboard...</h3>
+          <p style={{ fontSize: 13, color: "#64748b" }}>Fetching analytics data.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="page">
+        <div className="login-error" style={{ maxWidth: 500, margin: "60px auto" }}>
+          <strong>Failed to load dashboard:</strong> {error.message || "Unknown error"}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page">

@@ -43,21 +43,32 @@ export default function LoansList() {
     return qs ? `/loans?${qs}` : "/loans";
   }, [search, riskLevel]);
 
-  const { data: loans, isLoading, error } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ["loans", requestPath],
     queryFn: () => api.get(requestPath),
   });
 
+  // Support both paginated response { loans, total } and legacy array response
+  const loans = Array.isArray(data) ? data : (data?.loans || []);
+
   const handleDelete = async (id) => {
     const ok = window.confirm("Delete this loan application?");
     if (!ok) return;
-    await api.delete(`/loans/${id}`);
-    await queryClient.invalidateQueries({ queryKey: ["loans"], exact: false });
+    try {
+      await api.delete(`/loans/${id}`);
+      await queryClient.invalidateQueries({ queryKey: ["loans"], exact: false });
+    } catch (err) {
+      alert(err.message || "Failed to delete. You may not have admin permissions.");
+    }
   };
 
   const updateStatus = async (id, status) => {
-    await api.patch(`/loans/${id}/status`, { status });
-    await queryClient.invalidateQueries({ queryKey: ["loans"], exact: false });
+    try {
+      await api.patch(`/loans/${id}/status`, { status });
+      await queryClient.invalidateQueries({ queryKey: ["loans"], exact: false });
+    } catch (err) {
+      alert(err.message || "Failed to update status. You may not have admin permissions.");
+    }
   };
 
   return (
@@ -122,7 +133,7 @@ export default function LoansList() {
                 </tr>
               </thead>
               <tbody>
-                {(loans || []).map((l) => (
+                {loans.map((l) => (
                   <tr key={l._id}>
                     <td>
                       <Link href={`/loans/${l._id}`} style={{ fontWeight: 600, color: "#1e40af" }}>
@@ -176,7 +187,7 @@ export default function LoansList() {
                   </tr>
                 ))}
 
-                {(loans || []).length === 0 ? (
+                {loans.length === 0 ? (
                   <tr>
                     <td colSpan={7}>
                       <div className="empty-state">
